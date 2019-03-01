@@ -5,7 +5,7 @@ public class CertAnalaysisResult {
     private boolean selfsigned;
     private boolean expired;
     private boolean wrongHostName;
-    private boolean insecureModulous;
+    private boolean insecureModulus;
     private boolean weakHash;
     private String subjectdn;
     private String issuerdn;
@@ -37,12 +37,12 @@ public class CertAnalaysisResult {
         this.wrongHostName = wrongHostName;
     }
 
-    public boolean isInsecureModulous() {
-        return insecureModulous;
+    public boolean isInsecureModulus() {
+        return insecureModulus;
     }
 
-    public void setInsecureModulous(boolean insecureModulous) {
-        this.insecureModulous = insecureModulous;
+    public void setInsecureModulus(boolean insecureModulus) {
+        this.insecureModulus = insecureModulus;
     }
 
     public boolean isWeakHash() {
@@ -98,7 +98,7 @@ public class CertAnalaysisResult {
         return "Is selfsigned cert =" + selfsigned +
                 "\n Is expired =" + expired +
                 "\n Is Wrong HostName =" + wrongHostName +
-                "\n Is Insecure Modulus =" + insecureModulous +
+                "\n Is Insecure Modulus =" + insecureModulus +
                 "\n Is Weak Hash =" + weakHash +
                 "\n Subject DN ='" + subjectdn + '\'' +
                 "\n Issuer DN = '" + issuerdn + '\'' +

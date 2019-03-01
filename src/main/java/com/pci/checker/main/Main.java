@@ -1,6 +1,5 @@
 package com.pci.checker.main;
 
-import com.pci.checker.model.CertAnalaysisResult;
 import com.pci.checker.service.AnalysisService;
 import com.pci.checker.service.CertService;
 import com.pci.checker.util.Utils;
@@ -16,14 +15,19 @@ public class Main {
     public static void main(String[] args) throws Exception {
 
 //        System.out.println(Utils.readLinksFromCsv(FILE));
+//
+//        certService.crawlAndStoreCert("facebook.com");
+//
+//        String cert = certService.fetchCertFromDB("facebook.com");
+//
+//        CertAnalaysisResult certAnalaysisResult = analysisService.analyzeCert("facebook.com", cert);
 
-        certService.crawlAndStoreCert("facebook.com");
+//        System.out.println(certAnalaysisResult);
 
-        String cert = certService.fetchCertFromDB("facebook.com");
+//        System.out.println(Utils.getRedirectedUrl("amd.com"));
+//      System.out.println(Utils.getOpenSshVersion("sazzadur.com"));
 
-        CertAnalaysisResult certAnalaysisResult = analysisService.analyzeCert("facebook.com", cert);
-
-        System.out.println(certAnalaysisResult);
+      Utils.getHeaders("abc.com");
 
     }
 }

@@ -67,7 +67,7 @@ public class AnalysisService {
 
         for (String key : PK_SIZE.keySet()) {  // 5
             if (pk.getAlgorithm().contains(key) && pkSize < PK_SIZE.get(key)) {
-                result.setInsecureModulous(true);
+                result.setInsecureModulus(true);
             }
         }
 
