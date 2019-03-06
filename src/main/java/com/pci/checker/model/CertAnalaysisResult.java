@@ -95,15 +95,15 @@ public class CertAnalaysisResult {
 
     @Override
     public String toString() {
-        return "Is selfsigned cert =" + selfsigned +
-                "\n Is expired =" + expired +
-                "\n Is Wrong HostName =" + wrongHostName +
-                "\n Is Insecure Modulus =" + insecureModulus +
-                "\n Is Weak Hash =" + weakHash +
-                "\n Subject DN ='" + subjectdn + '\'' +
-                "\n Issuer DN = '" + issuerdn + '\'' +
-                "\n signature Alg ='" + signatureAlg + '\'' +
-                "\n PK Type = '" + pkname + '\'' +
-                "\n PK Size = " + pkSize;
+        return " 1. Is selfsigned cert = " + selfsigned +
+                "\n 2. Is expired = " + expired +
+                "\n 3. Is Wrong HostName = " + wrongHostName +
+                "\n 4. Is Insecure Modulus = " + insecureModulus +
+                "\n 5. Is Weak Hash = " + weakHash +
+                "\n ..... Subject DN = '" + subjectdn + '\'' +
+                "\n ..... Issuer DN = '" + issuerdn + '\'' +
+                "\n ..... signature Alg = '" + signatureAlg + '\'' +
+                "\n ..... PK Type = '" + pkname + '\'' +
+                "\n ..... PK Size = " + pkSize;
     }
 }

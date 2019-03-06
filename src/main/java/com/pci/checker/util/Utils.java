@@ -118,26 +118,63 @@ public class Utils {
         return sshSoftwareSpec.toString();
     }
 
-    public static void getHeaders(String domainName) {
+    public static Map<String, List<String>> getHeaders(String domainName) throws Exception {
 
-        try {
+        URL obj = new URL("https://" + domainName);
+        HttpURLConnection conn = (HttpURLConnection) obj.openConnection();
+        conn.setReadTimeout(1000);
+        conn.setConnectTimeout(1000);
+        conn.addRequestProperty("Accept-Language", "en-US,en;q=0.8");
+        conn.addRequestProperty("User-Agent", "Mozilla");
 
-            URL obj = new URL("https://" + domainName);
-            HttpURLConnection conn = (HttpURLConnection) obj.openConnection();
-            conn.setReadTimeout(1000);
-            conn.setConnectTimeout(1000);
-            conn.addRequestProperty("Accept-Language", "en-US,en;q=0.8");
-            conn.addRequestProperty("User-Agent", "Mozilla");
+        return conn.getHeaderFields();
+    }
 
-            Map<String, List<String>> map = conn.getHeaderFields();
-            for (Map.Entry<String, List<String>> entry : map.entrySet()) {
-                System.out.println("Key : " + entry.getKey() +
-                        " ,Value : " + entry.getValue());
-            }
+    public static boolean isTls1Supported(String domainName, String version) throws Exception {
 
+        ProcessBuilder pb = new
+                ProcessBuilder("/bin/sh", "-c",
+                String.format("openssl s_client -connect %s:443 %s </dev/null 2>/dev/null", domainName, version));
 
-        } catch (Exception e) {
-            e.printStackTrace();
+        final Process p = pb.start();
+
+        BufferedReader br = new BufferedReader(new InputStreamReader(p.getInputStream()));
+
+        StringBuilder sshSoftwareSpec = new StringBuilder();
+
+        String line;
+
+        while ((line = br.readLine()) != null) {
+            sshSoftwareSpec.append(line)
+                    .append('\n');
         }
+
+        String output = sshSoftwareSpec.toString();
+
+        return !(output.isEmpty() || output.contains("no peer certificate available"));
+    }
+
+    public static boolean isWeakCipherSupported(String domainName) throws Exception {
+
+        ProcessBuilder pb = new
+                ProcessBuilder("/bin/sh", "-c",
+                String.format("openssl s_client -connect %s:443 -cipher 'IDEA:DES:MD5' </dev/null 2>/dev/null", domainName));
+
+        final Process p = pb.start();
+
+        BufferedReader br = new BufferedReader(new InputStreamReader(p.getInputStream()));
+
+        StringBuilder sshSoftwareSpec = new StringBuilder();
+
+        String line;
+
+        while ((line = br.readLine()) != null) {
+            sshSoftwareSpec.append(line)
+                    .append('\n');
+        }
+
+        String output = sshSoftwareSpec.toString();
+
+        return !(output.isEmpty() || output.contains("no peer certificate available"));
     }
 }

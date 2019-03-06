@@ -1,145 +1,104 @@
 package com.pci.checker.service;
 
+import com.pci.checker.model.AnalysisResult;
 import com.pci.checker.model.CertAnalaysisResult;
-import org.bouncycastle.jce.provider.JCEECPublicKey;
+import com.pci.checker.util.Utils;
 
-import java.io.ByteArrayInputStream;
-import java.io.InputStream;
-import java.nio.charset.StandardCharsets;
-import java.security.*;
-import java.security.cert.*;
-import java.security.interfaces.DSAPublicKey;
-import java.security.interfaces.ECPublicKey;
-import java.security.interfaces.RSAPublicKey;
-import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
+
 
 public class AnalysisService {
 
-    private static final String[] WEAK_HASH = new String[]{"MD5, SHA, SHA1, SHA-1"};
+    private static final String[] VUL_OPENSSH = new String[]{"OpenSSH_5.", "OpenSSH_6.", "OpenSSH_7.1", "OpenSSH_7.2", "OpenSSH_7.3", "OpenSSH_7.4", "OpenSSH_7.5", "OpenSSH_7.6"};
 
-    private static final Map<String, Integer> PK_SIZE = new HashMap<>();
+    private static final String SERVER_KEY = "Server";
 
-    static {
-        PK_SIZE.put("RSA", 2048);
-        PK_SIZE.put("DSA", 2048);
-        PK_SIZE.put("EC", 224);
-        PK_SIZE.put("ECDSA", 224);
-    }
+    private static final String HEADER_X_FRAME = "X-Frame-Options";
+    private static final String HEADER_XSS = "X-XSS-Protection";
+    private static final String HEADER_STRICT_TS = "Strict-Transport-Security";
+    private static final String HEADER_CONTENT_TO = "X-Content-Type-Options";
 
-    public CertAnalaysisResult analyzeCert(String domainName, String encodedCert) throws Exception {
+    private static final CertAnalysisService certAnalysisService = new CertAnalysisService();
 
-        CertAnalaysisResult result = new CertAnalaysisResult();
+    public AnalysisResult getAnalysisResult(String domainName) throws Exception {
 
-        CertificateFactory fact = CertificateFactory.getInstance("X.509");
-        InputStream stream = new ByteArrayInputStream(encodedCert.getBytes(StandardCharsets.UTF_8));
-        X509Certificate cert = (X509Certificate) fact.generateCertificate(stream);
+        AnalysisResult analysisResult = new AnalysisResult();
+        CertAnalaysisResult certAnalaysisResult = certAnalysisService.analyzeCert(domainName);
 
-        result.setExpired(isExpired(cert));    // 1
-        result.setSelfsigned(isSelfSigned(cert)); // 2
+        analysisResult.setCertAnalaysisResult(certAnalaysisResult);
 
-        // Get subject
-        Principal principal = cert.getSubjectDN();
-        String subjectDn = principal.toString();
-        result.setSubjectdn(subjectDn);
+        String redirectURL = Utils.getRedirectedUrl(domainName);
+
+        analysisResult.setRedirectUrl(redirectURL);
+
+        if (redirectURL != null) {
+            analysisResult.setRedirectedToHttp(redirectURL.contains("http://"));
+        }
 
 
-        principal = cert.getIssuerDN();
-        String issuerDn = principal.getName();
-        result.setIssuerdn(issuerDn);
+        String openSSHVersion = Utils.getOpenSshVersion(domainName);
 
-        System.out.println(subjectDn + " : " + domainName);
-        result.setWrongHostName(!subjectDn.contains(domainName)); // 3
+        if (openSSHVersion.contains("OpenSSH")) {
+            analysisResult.setOpensshAvailable(true);
+        }
 
-        for (String hash : WEAK_HASH) {    // 4
-            if (cert.getSigAlgName().contains(hash)) {
-                result.setWeakHash(true);
+        for (String vul : VUL_OPENSSH) {
+            if (openSSHVersion.contains(vul)) {
+                analysisResult.setOpensshVulnerable(true);
+                break;
             }
         }
 
-        result.setSignatureAlg(cert.getSigAlgName());
+        analysisResult.setOpensshVersion(openSSHVersion);
 
-        PublicKey pk = cert.getPublicKey();
+        Map<String, List<String>> headers = Utils.getHeaders(domainName);
 
-        result.setPkname(pk.getAlgorithm());
-        int pkSize = getKeyLength(pk);
-        result.setPkSize(pkSize);
+        List<String> serverInfo = headers.get(SERVER_KEY);
 
-        for (String key : PK_SIZE.keySet()) {  // 5
-            if (pk.getAlgorithm().contains(key) && pkSize < PK_SIZE.get(key)) {
-                result.setInsecureModulus(true);
+        if (serverInfo != null) {
+            analysisResult.setServerInfo(headers.get(SERVER_KEY).toString());
+            if (serverInfo.toString().matches("(.)+/[0-9](.)+")) { // [Apache/1.0, PHP/2.3]
+                analysisResult.setServerInfoAvailable(true);
             }
         }
 
-        return result;
-    }
 
-    private static boolean isExpired(X509Certificate cert) {
-        try {
-            cert.checkValidity();
-        } catch (CertificateNotYetValidException | CertificateExpiredException e) {
-            return true;
+        List<String> xframe = headers.get(HEADER_X_FRAME);
+
+        if (xframe != null && !xframe.isEmpty()) {
+            analysisResult.setXframeOptionAvailable(true);
+            analysisResult.setXframeOption(xframe.toString());
         }
 
-        return false;
-    }
+        List<String> hxss = headers.get(HEADER_XSS);
 
-    private static boolean isSelfSigned(X509Certificate cert)
-            throws CertificateException, NoSuchAlgorithmException,
-            NoSuchProviderException {
-        try {
-            // Try to verify certificate signature with its own public key
-            PublicKey key = cert.getPublicKey();
-            cert.verify(key);
-            return true;
-        } catch (SignatureException sigEx) {
-            // Invalid signature --> not self-signed
-            return false;
-        } catch (InvalidKeyException keyEx) {
-            // Invalid key --> not self-signed
-            return false;
-        }
-    }
-
-    /**
-     * Gets the key length of supported keys
-     *
-     * @param pk PublicKey used to derive the keysize
-     * @return -1 if key is unsupported, otherwise a number >= 0. 0 usually means the length can not be calculated,
-     * for example if the key is an EC key and the "implicitlyCA" encoding is used.
-     */
-    public static int getKeyLength(final PublicKey pk) {
-        int len = -1;
-        if (pk instanceof RSAPublicKey) {
-            final RSAPublicKey rsapub = (RSAPublicKey) pk;
-            len = rsapub.getModulus().bitLength();
-        } else if (pk instanceof JCEECPublicKey) {
-            final JCEECPublicKey ecpriv = (JCEECPublicKey) pk;
-            final org.bouncycastle.jce.spec.ECParameterSpec spec = ecpriv.getParameters();
-            if (spec != null) {
-                len = spec.getN().bitLength();
-            } else {
-                // We support the key, but we don't know the key length
-                len = 0;
-            }
-        } else if (pk instanceof ECPublicKey) {
-            final ECPublicKey ecpriv = (ECPublicKey) pk;
-            final java.security.spec.ECParameterSpec spec = ecpriv.getParams();
-            if (spec != null) {
-                len = spec.getOrder().bitLength(); // does this really return something we expect?
-            } else {
-                // We support the key, but we don't know the key length
-                len = 0;
-            }
-        } else if (pk instanceof DSAPublicKey) {
-            final DSAPublicKey dsapub = (DSAPublicKey) pk;
-            if (dsapub.getParams() != null) {
-                len = dsapub.getParams().getP().bitLength();
-            } else {
-                len = dsapub.getY().bitLength();
-            }
+        if (hxss != null && !hxss.isEmpty()) {
+            analysisResult.setXssHeaderAvailable(true);
+            analysisResult.setXssHeader(hxss.toString());
         }
 
-        return len;
+        List<String> hsts = headers.get(HEADER_STRICT_TS);
+
+        if (hsts != null && !hsts.isEmpty()) {
+            analysisResult.setStrictTransportAvailable(true);
+            analysisResult.setStrictTransport(hsts.toString());
+        }
+
+        List<String> hcto = headers.get(HEADER_CONTENT_TO);
+
+        if (hcto != null && !hcto.isEmpty()) {
+            analysisResult.setContentTypeOptionsAvailable(true);
+            analysisResult.setContentTypeOptions(hcto.toString());
+        }
+
+        analysisResult.setTlsv1Supported(Utils.isTls1Supported(domainName, "-tls1"));
+        analysisResult.setSslv3Supported(Utils.isTls1Supported(domainName, "-ssl3"));
+        analysisResult.setSslv2Supported(Utils.isTls1Supported(domainName, "-ssl2"));
+
+        analysisResult.setWeakcipherSupported(Utils.isWeakCipherSupported(domainName));
+
+        return analysisResult;
+
     }
 }

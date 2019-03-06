@@ -12,36 +12,6 @@ public class CertService {
     //  Table:
     //  CREATE TABLE `pci_checker`.`certificate_info` ( `id` INT NOT NULL AUTO_INCREMENT , `domain_name` VARCHAR(100) NOT NULL , `cert` TEXT NOT NULL , PRIMARY KEY (`id`), UNIQUE (`domain_name`)) ENGINE = InnoDB;
 
-    public void crawlAndStoreCert(String domainName) throws Exception {
-
-        String cert = crawlCertificate(domainName);
-        storeCert(domainName, cert);
-
-
-    }
-
-    private String crawlCertificate(String domainName) throws Exception {
-
-        ProcessBuilder pb = new
-                ProcessBuilder("/bin/sh", "-c",
-                String.format("openssl s_client -showcerts -connect %s:443 </dev/null 2>/dev/null | openssl x509 -outform PEM", domainName));
-
-        final Process p = pb.start();
-
-        BufferedReader br = new BufferedReader(new InputStreamReader(p.getInputStream()));
-
-        StringBuilder cert = new StringBuilder();
-
-        String line;
-
-        while ((line = br.readLine()) != null) {
-            cert.append(line)
-                    .append('\n');
-        }
-
-        return cert.toString();
-    }
-
     private void storeCert(String domainName, String cert) throws Exception {
         String myDriver = "com.mysql.cj.jdbc.Driver";
         String myUrl = "jdbc:mysql://localhost/pci_checker";
