@@ -35,6 +35,14 @@ public class CertAnalysisService {
 
         String encodedCert = crawlCertificate(domainName);
 
+        if (encodedCert.isEmpty()) {
+            encodedCert = crawlCertificateWithServerName(domainName);
+        }
+
+        if (encodedCert.isEmpty()) {
+            return result;
+        }
+
         CertificateFactory fact = CertificateFactory.getInstance("X.509");
         InputStream stream = new ByteArrayInputStream(encodedCert.getBytes(StandardCharsets.UTF_8));
         X509Certificate cert = (X509Certificate) fact.generateCertificate(stream);
@@ -82,6 +90,28 @@ public class CertAnalysisService {
         ProcessBuilder pb = new
                 ProcessBuilder("/bin/sh", "-c",
                 String.format("openssl s_client -showcerts -connect %s:443 </dev/null 2>/dev/null | openssl x509 -outform PEM", domainName));
+
+        final Process p = pb.start();
+
+        BufferedReader br = new BufferedReader(new InputStreamReader(p.getInputStream()));
+
+        StringBuilder cert = new StringBuilder();
+
+        String line;
+
+        while ((line = br.readLine()) != null) {
+            cert.append(line)
+                    .append('\n');
+        }
+
+        return cert.toString();
+    }
+
+    private static String crawlCertificateWithServerName(String domainName) throws Exception {
+
+        ProcessBuilder pb = new
+                ProcessBuilder("/bin/sh", "-c",
+                String.format("openssl s_client -showcerts -connect %s:443 -servername www.%s </dev/null 2>/dev/null | openssl x509 -outform PEM", domainName, domainName));
 
         final Process p = pb.start();
 

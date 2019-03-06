@@ -23,8 +23,9 @@ public class Utils {
 
         BufferedReader br = new BufferedReader(new FileReader(csvFile));
         while ((line = br.readLine()) != null) {
-
-            links.add(line.split(",")[1]);
+            if (!line.isEmpty()) {
+                links.add(line.split(",")[1]);
+            }
         }
 
         return links;
@@ -34,7 +35,7 @@ public class Utils {
 
         try {
 
-            URL obj = new URL("http://" + domainName);
+            URL obj = new URL("http://" + domainName.trim());
             HttpURLConnection conn = (HttpURLConnection) obj.openConnection();
             conn.setReadTimeout(1000);
             conn.setConnectTimeout(1000);
