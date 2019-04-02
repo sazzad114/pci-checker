@@ -1,17 +1,16 @@
 package com.pci.checker.util;
 
-import com.sun.deploy.net.HttpResponse;
-import com.sun.xml.internal.messaging.saaj.packaging.mime.Header;
-import sun.net.www.http.HttpClient;
+import com.sun.javafx.binding.StringFormatter;
 
 import java.io.BufferedReader;
 import java.io.FileReader;
 import java.io.InputStreamReader;
 import java.net.HttpURLConnection;
 import java.net.URL;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
+import java.util.stream.Collectors;
 
 public class Utils {
 
@@ -24,9 +23,11 @@ public class Utils {
         BufferedReader br = new BufferedReader(new FileReader(csvFile));
         while ((line = br.readLine()) != null) {
             if (!line.isEmpty()) {
-                links.add(line.split(",")[1]);
+                links.add(line.split(",")[1].toLowerCase());
             }
         }
+
+        System.out.println("Total: " + links.size());
 
         return links;
     }
@@ -35,7 +36,7 @@ public class Utils {
 
         try {
 
-            URL obj = new URL("http://" + domainName.trim());
+            URL obj = new URL("http://www." + domainName);
             HttpURLConnection conn = (HttpURLConnection) obj.openConnection();
             conn.setReadTimeout(1000);
             conn.setConnectTimeout(1000);
@@ -53,7 +54,8 @@ public class Utils {
                 redirect = true;
             }
 
-            String newUrl = "http://" + domainName;
+            String newUrl = "http://www." + domainName;
+
 
             while (redirect) {
 
@@ -68,13 +70,12 @@ public class Utils {
                 String cookies = conn.getHeaderField("Set-Cookie");
 
                 // open the new connection again
+
                 conn = (HttpURLConnection) new URL(newUrl).openConnection();
                 conn.setReadTimeout(1000);
                 conn.setConnectTimeout(1000);
                 conn.setRequestProperty("Cookie", cookies);
                 conn.addRequestProperty("Accept-Language", "en-US,en;q=0.8");
-
-                System.out.println("Redirect to URL : " + newUrl);
 
                 // normally, 3xx is redirect
                 status = conn.getResponseCode();
@@ -121,7 +122,7 @@ public class Utils {
 
     public static Map<String, List<String>> getHeaders(String domainName) throws Exception {
 
-        URL obj = new URL("https://" + domainName);
+        URL obj = new URL("https://www." + domainName);
         HttpURLConnection conn = (HttpURLConnection) obj.openConnection();
         conn.setReadTimeout(1000);
         conn.setConnectTimeout(1000);
@@ -131,11 +132,25 @@ public class Utils {
         return conn.getHeaderFields();
     }
 
+
+    public static int isHttpTrackEnabled(String domainName) throws Exception {
+
+        URL obj = new URL("http://www." + domainName);
+        HttpURLConnection conn = (HttpURLConnection) obj.openConnection();
+        conn.setReadTimeout(1000);
+        conn.setConnectTimeout(1000);
+        conn.setRequestMethod("TRACE");
+        conn.addRequestProperty("Accept-Language", "en-US,en;q=0.8");
+        conn.addRequestProperty("User-Agent", "Mozilla");
+
+        return conn.getResponseCode();
+    }
+
     public static boolean isTls1Supported(String domainName, String version) throws Exception {
 
         ProcessBuilder pb = new
                 ProcessBuilder("/bin/sh", "-c",
-                String.format("openssl s_client -connect %s:443 %s </dev/null 2>/dev/null", domainName, version));
+                String.format("timeout 2 openssl s_client -connect www.%s:443 %s </dev/null 2>/dev/null", domainName, version));
 
         final Process p = pb.start();
 
@@ -159,7 +174,7 @@ public class Utils {
 
         ProcessBuilder pb = new
                 ProcessBuilder("/bin/sh", "-c",
-                String.format("openssl s_client -connect %s:443 -cipher 'IDEA:DES:MD5' </dev/null 2>/dev/null", domainName));
+                String.format("timeout 2 openssl s_client -connect www.%s:443 -cipher 'IDEA:DES:MD5' </dev/null 2>/dev/null", domainName));
 
         final Process p = pb.start();
 
@@ -177,5 +192,143 @@ public class Utils {
         String output = sshSoftwareSpec.toString();
 
         return !(output.isEmpty() || output.contains("no peer certificate available"));
+    }
+
+
+    public static String getMysqlVersion(String domainName) throws Exception {
+
+        ProcessBuilder pb = new
+                ProcessBuilder("/bin/sh", "-c",
+                String.format("nc www.%s 3306 -w 1", domainName));
+
+        final Process p = pb.start();
+
+        BufferedReader br = new BufferedReader(new InputStreamReader(p.getInputStream()));
+
+        StringBuilder mysqlConnMsg = new StringBuilder();
+
+        String line;
+
+        while ((line = br.readLine()) != null) {
+            mysqlConnMsg.append(line)
+                    .append('\n');
+        }
+
+        return mysqlConnMsg.toString();
+    }
+
+    public static boolean isMysqlAccessible(String domainName) throws Exception {
+
+        ProcessBuilder pb = new
+                ProcessBuilder("/bin/sh", "-c",
+                String.format("timeout 1 /opt/lampp/bin/mysql -u root -h www.%s", domainName));
+
+        final Process p = pb.start();
+
+        BufferedReader br = new BufferedReader(new InputStreamReader(p.getErrorStream()));
+
+        StringBuilder mysqlError = new StringBuilder();
+
+        String line;
+
+        while ((line = br.readLine()) != null) {
+            mysqlError.append(line)
+                    .append('\n');
+        }
+
+        String output = mysqlError.toString();
+
+        return output.trim().isEmpty();
+    }
+
+    public static boolean missesIntegrityChecked(String domainName, List<String> urlList) throws Exception {
+
+        URL obj = new URL(domainName);
+        HttpURLConnection conn = (HttpURLConnection) obj.openConnection();
+        conn.setReadTimeout(1000);
+        conn.setConnectTimeout(1000);
+        conn.addRequestProperty("Accept-Language", "en-US,en;q=0.8");
+        conn.addRequestProperty("User-Agent", "Mozilla");
+
+        BufferedReader br = new BufferedReader(
+                new InputStreamReader(conn.getInputStream()));
+
+        String pattern = ".*src=[\"\']([^\"\']+)[\"\'].*";
+        Pattern r = Pattern.compile(pattern);
+
+        boolean missesCheck = false;
+
+        String inputLine;
+        while ((inputLine = br.readLine()) != null) {
+            if (inputLine.contains("<script")) {
+                Matcher m = r.matcher(inputLine);
+                if (m.matches()) {
+                    String link = m.group(1);
+                    urlList.add(link);
+
+                    if (link.startsWith("//") || link.startsWith("http://") || link.startsWith("https://")) {
+                        if (!inputLine.contains("integrity=")) {
+                            missesCheck = true;
+                        }
+                    }
+                }
+            }
+        }
+
+        br.close();
+
+        return missesCheck;
+    }
+
+    public static boolean isBrowseDirEnabled(String domainName, List<String> urlList) throws Exception {
+
+        List<String> filteredList = urlList.stream()
+                .filter(url -> !url.isEmpty() && !url.startsWith("/") && !url.startsWith("http://") && !url.startsWith("https://"))
+                .collect(Collectors.toList());
+
+        Map<String, Integer> dirCount = new HashMap<>();
+
+        for (String link : filteredList) {
+            String dir = link.split("/")[0];
+
+            Integer count = dirCount.putIfAbsent(dir, 1);
+            if (count != null) {
+                dirCount.put(dir, count + 1);
+            }
+        }
+
+
+        String dir = Collections.max(dirCount.entrySet(), Comparator.comparingInt(Map.Entry::getValue)).getKey();
+
+        if (dirCount.get(dir) > 1) {
+
+            System.out.println(" domain: " + domainName + "  Dir: " + dir);
+
+            URL obj = new URL(domainName + "/" + dir);
+            HttpURLConnection conn = (HttpURLConnection) obj.openConnection();
+            conn.setReadTimeout(1000);
+            conn.setConnectTimeout(1000);
+            conn.addRequestProperty("Accept-Language", "en-US,en;q=0.8");
+            conn.addRequestProperty("User-Agent", "Mozilla");
+
+            if (conn.getResponseCode() != HttpURLConnection.HTTP_NOT_FOUND) {
+                BufferedReader br = new BufferedReader(
+                        new InputStreamReader(conn.getInputStream()));
+
+                String inputLine;
+                while ((inputLine = br.readLine()) != null) {
+
+                    if (inputLine.contains("<title>Index of")) {
+                        if (inputLine.contains(dir + "</title>")) {
+                            return true;
+                        }
+                    }
+                }
+
+                br.close();
+            }
+        }
+
+        return false;
     }
 }

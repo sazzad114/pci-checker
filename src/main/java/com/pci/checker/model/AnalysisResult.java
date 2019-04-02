@@ -1,5 +1,8 @@
 package com.pci.checker.model;
 
+import java.util.ArrayList;
+import java.util.List;
+
 public class AnalysisResult {
 
     private CertAnalaysisResult certAnalaysisResult;
@@ -31,6 +34,17 @@ public class AnalysisResult {
     private boolean sslv2Supported;
 
     private boolean weakcipherSupported;
+
+    private boolean mysqlAvailable;
+    private boolean defaultMysqlPassword;
+    private boolean integrityCheck;
+    private List<String> badScriptSrc;
+
+
+    private boolean httpTrackEnabled;
+    private int httpTrackResCode;
+
+    private boolean browsableDirEnabled;
 
     public boolean isWeakcipherSupported() {
         return weakcipherSupported;
@@ -192,8 +206,73 @@ public class AnalysisResult {
         this.certAnalaysisResult = certAnalaysisResult;
     }
 
+    public boolean isMysqlAvailable() {
+        return mysqlAvailable;
+    }
+
+    public void setMysqlAvailable(boolean mysqlAvailable) {
+        this.mysqlAvailable = mysqlAvailable;
+    }
+
+    public boolean isDefaultMysqlPassword() {
+        return defaultMysqlPassword;
+    }
+
+    public void setDefaultMysqlPassword(boolean defaultMysqlPassword) {
+        this.defaultMysqlPassword = defaultMysqlPassword;
+    }
+
+    public boolean isIntegrityCheck() {
+        return integrityCheck;
+    }
+
+    public void setIntegrityCheck(boolean integrityCheck) {
+        this.integrityCheck = integrityCheck;
+    }
+
+    public List<String> getBadScriptSrc() {
+        return badScriptSrc;
+    }
+
+    public void setBadScriptSrc(List<String> badScriptSrc) {
+        this.badScriptSrc = badScriptSrc;
+    }
+
+    public boolean isHttpTrackEnabled() {
+        return httpTrackEnabled;
+    }
+
+    public void setHttpTrackEnabled(boolean httpTrackEnabled) {
+        this.httpTrackEnabled = httpTrackEnabled;
+    }
+
+    public int getHttpTrackResCode() {
+        return httpTrackResCode;
+    }
+
+    public void setHttpTrackResCode(int httpTrackResCode) {
+        this.httpTrackResCode = httpTrackResCode;
+    }
+
+    public boolean isBrowsableDirEnabled() {
+        return browsableDirEnabled;
+    }
+
+    public void setBrowsableDirEnabled(boolean browsableDirEnabled) {
+        this.browsableDirEnabled = browsableDirEnabled;
+    }
+
     @Override
     public String toString() {
+
+        if (certAnalaysisResult == null) {
+            certAnalaysisResult = new CertAnalaysisResult();
+        }
+
+        if (badScriptSrc == null) {
+            badScriptSrc = new ArrayList<>();
+        }
+
         return certAnalaysisResult.toString() +
                 "\n 6. Is Redirected to HTTP = " + redirectedToHttp +
                 "\n ..... Redirect URL = " + redirectUrl +
@@ -213,6 +292,13 @@ public class AnalysisResult {
                 "\n 11a. TLSv1.0 Supported = " + tlsv1Supported +
                 "\n 11b. SSLv3.0 Supported = " + sslv3Supported +
                 "\n 11c. SSLv2.0 Supported = " + sslv2Supported +
-                "\n 12. Weak Cipher Supported = " + weakcipherSupported;
+                "\n 12. Weak Cipher Supported = " + weakcipherSupported +
+                "\n 13. Mysql available = " + mysqlAvailable +
+                "\n 14. Mysql default password = " + defaultMysqlPassword +
+                "\n 15. Didn't check script integrity = " + integrityCheck +
+                "\n ..... Script URLs: = " + badScriptSrc.toString() +
+                "\n 16. HTTP Trace = " + httpTrackEnabled +
+                "\n ..... HTTP Trace Response code: = " + httpTrackResCode +
+                "\n 17. Browsable Dir Enabled = " + browsableDirEnabled;
     }
 }

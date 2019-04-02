@@ -15,6 +15,7 @@ import java.security.interfaces.ECPublicKey;
 import java.security.interfaces.RSAPublicKey;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.concurrent.TimeUnit;
 
 public class CertAnalysisService {
 
@@ -60,7 +61,7 @@ public class CertAnalysisService {
         String issuerDn = principal.getName();
         result.setIssuerdn(issuerDn);
 
-        result.setWrongHostName(!subjectDn.contains(domainName)); // 3
+        result.setWrongHostName(!subjectDn.toLowerCase().contains(domainName.toLowerCase())); // 3
 
         for (String hash : WEAK_HASH) {    // 4
             if (cert.getSigAlgName().contains(hash)) {
@@ -89,7 +90,7 @@ public class CertAnalysisService {
 
         ProcessBuilder pb = new
                 ProcessBuilder("/bin/sh", "-c",
-                String.format("openssl s_client -showcerts -connect %s:443 </dev/null 2>/dev/null | openssl x509 -outform PEM", domainName));
+                String.format("timeout 2 openssl s_client -showcerts -connect www.%s:443 </dev/null 2>/dev/null | openssl x509 -outform PEM", domainName));
 
         final Process p = pb.start();
 
@@ -111,7 +112,7 @@ public class CertAnalysisService {
 
         ProcessBuilder pb = new
                 ProcessBuilder("/bin/sh", "-c",
-                String.format("openssl s_client -showcerts -connect %s:443 -servername www.%s </dev/null 2>/dev/null | openssl x509 -outform PEM", domainName, domainName));
+                String.format("timeout 2 openssl s_client -showcerts -connect www.%s:443 -servername www.%s </dev/null 2>/dev/null | openssl x509 -outform PEM", domainName, domainName));
 
         final Process p = pb.start();
 

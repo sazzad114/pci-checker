@@ -4,6 +4,8 @@ import com.pci.checker.model.AnalysisResult;
 import com.pci.checker.model.CertAnalaysisResult;
 import com.pci.checker.util.Utils;
 
+import java.net.HttpURLConnection;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 
@@ -21,12 +23,19 @@ public class AnalysisService {
 
     private static final CertAnalysisService certAnalysisService = new CertAnalysisService();
 
-    public AnalysisResult getAnalysisResult(String domainName) throws Exception {
+    public AnalysisResult getAnalysisResult(String domainName) {
 
         AnalysisResult analysisResult = new AnalysisResult();
-        CertAnalaysisResult certAnalaysisResult = certAnalysisService.analyzeCert(domainName);
 
-        analysisResult.setCertAnalaysisResult(certAnalaysisResult);
+
+        try {
+            CertAnalaysisResult certAnalaysisResult = certAnalysisService.analyzeCert(domainName);
+            analysisResult.setCertAnalaysisResult(certAnalaysisResult);
+        } catch (Exception e) {
+            System.err.println("error handling domain: " + domainName);
+            e.printStackTrace(System.err);
+        }
+
 
         String redirectURL = Utils.getRedirectedUrl(domainName);
 
@@ -36,67 +45,137 @@ public class AnalysisService {
             analysisResult.setRedirectedToHttp(redirectURL.contains("http://"));
         }
 
+        redirectURL = "http://www." + domainName;
 
-        String openSSHVersion = Utils.getOpenSshVersion(domainName);
+        try {
 
-        if (openSSHVersion.contains("OpenSSH")) {
-            analysisResult.setOpensshAvailable(true);
-        }
+            String openSSHVersion = Utils.getOpenSshVersion(domainName);
 
-        for (String vul : VUL_OPENSSH) {
-            if (openSSHVersion.contains(vul)) {
-                analysisResult.setOpensshVulnerable(true);
-                break;
+            if (openSSHVersion.contains("OpenSSH")) {
+                analysisResult.setOpensshAvailable(true);
             }
-        }
 
-        analysisResult.setOpensshVersion(openSSHVersion);
-
-        Map<String, List<String>> headers = Utils.getHeaders(domainName);
-
-        List<String> serverInfo = headers.get(SERVER_KEY);
-
-        if (serverInfo != null) {
-            analysisResult.setServerInfo(headers.get(SERVER_KEY).toString());
-            if (serverInfo.toString().matches("(.)+/[0-9](.)+")) { // [Apache/1.0, PHP/2.3]
-                analysisResult.setServerInfoAvailable(true);
+            for (String vul : VUL_OPENSSH) {
+                if (openSSHVersion.contains(vul)) {
+                    analysisResult.setOpensshVulnerable(true);
+                    break;
+                }
             }
+
+            analysisResult.setOpensshVersion(openSSHVersion);
+        } catch (Exception e) {
+            System.err.println("error handling domain: " + domainName);
+            e.printStackTrace(System.err);
         }
 
 
-        List<String> xframe = headers.get(HEADER_X_FRAME);
+        try {
 
-        if (xframe != null && !xframe.isEmpty()) {
-            analysisResult.setXframeOptionAvailable(true);
-            analysisResult.setXframeOption(xframe.toString());
+            Map<String, List<String>> headers = Utils.getHeaders(domainName);
+
+            List<String> serverInfo = headers.get(SERVER_KEY);
+
+            if (serverInfo != null) {
+                analysisResult.setServerInfo(headers.get(SERVER_KEY).toString());
+                if (serverInfo.toString().matches("(.)+/[0-9](.)+")) { // [Apache/1.0, PHP/2.3]
+                    analysisResult.setServerInfoAvailable(true);
+                }
+            }
+
+
+            List<String> xframe = headers.get(HEADER_X_FRAME);
+
+            if (xframe != null && !xframe.isEmpty()) {
+                analysisResult.setXframeOptionAvailable(true);
+                analysisResult.setXframeOption(xframe.toString());
+            }
+
+            List<String> hxss = headers.get(HEADER_XSS);
+
+            if (hxss != null && !hxss.isEmpty()) {
+                analysisResult.setXssHeaderAvailable(true);
+                analysisResult.setXssHeader(hxss.toString());
+            }
+
+            List<String> hsts = headers.get(HEADER_STRICT_TS);
+
+            if (hsts != null && !hsts.isEmpty()) {
+                analysisResult.setStrictTransportAvailable(true);
+                analysisResult.setStrictTransport(hsts.toString());
+            }
+
+            List<String> hcto = headers.get(HEADER_CONTENT_TO);
+
+            if (hcto != null && !hcto.isEmpty()) {
+                analysisResult.setContentTypeOptionsAvailable(true);
+                analysisResult.setContentTypeOptions(hcto.toString());
+            }
+
+        } catch (Exception e) {
+            System.err.println("error handling domain: " + domainName);
+            e.printStackTrace(System.err);
         }
 
-        List<String> hxss = headers.get(HEADER_XSS);
+        try {
 
-        if (hxss != null && !hxss.isEmpty()) {
-            analysisResult.setXssHeaderAvailable(true);
-            analysisResult.setXssHeader(hxss.toString());
+            analysisResult.setTlsv1Supported(Utils.isTls1Supported(domainName, "-tls1"));
+            analysisResult.setSslv3Supported(Utils.isTls1Supported(domainName, "-ssl3"));
+            analysisResult.setSslv2Supported(Utils.isTls1Supported(domainName, "-ssl2"));
+        } catch (Exception e) {
+            System.err.println("error handling domain: " + domainName);
+            e.printStackTrace(System.err);
         }
 
-        List<String> hsts = headers.get(HEADER_STRICT_TS);
-
-        if (hsts != null && !hsts.isEmpty()) {
-            analysisResult.setStrictTransportAvailable(true);
-            analysisResult.setStrictTransport(hsts.toString());
+        try {
+            analysisResult.setWeakcipherSupported(Utils.isWeakCipherSupported(domainName));
+        } catch (Exception e) {
+            System.err.println("error handling domain: " + domainName);
+            e.printStackTrace(System.err);
         }
 
-        List<String> hcto = headers.get(HEADER_CONTENT_TO);
+        try {
 
-        if (hcto != null && !hcto.isEmpty()) {
-            analysisResult.setContentTypeOptionsAvailable(true);
-            analysisResult.setContentTypeOptions(hcto.toString());
+            String mysqlConn = Utils.getMysqlVersion(domainName).trim();
+
+            if (!mysqlConn.isEmpty()) {
+                analysisResult.setMysqlAvailable(true);
+                analysisResult.setDefaultMysqlPassword(Utils.isMysqlAccessible(domainName));
+            }
+        } catch (Exception e) {
+            System.err.println("error handling domain: " + domainName);
+            e.printStackTrace(System.err);
         }
 
-        analysisResult.setTlsv1Supported(Utils.isTls1Supported(domainName, "-tls1"));
-        analysisResult.setSslv3Supported(Utils.isTls1Supported(domainName, "-ssl3"));
-        analysisResult.setSslv2Supported(Utils.isTls1Supported(domainName, "-ssl2"));
+        try {
 
-        analysisResult.setWeakcipherSupported(Utils.isWeakCipherSupported(domainName));
+            List<String> urlList = new ArrayList<>();
+
+            analysisResult.setIntegrityCheck(Utils.missesIntegrityChecked(redirectURL, urlList));
+            analysisResult.setBadScriptSrc(urlList);
+
+            analysisResult.setBrowsableDirEnabled(Utils.isBrowseDirEnabled(redirectURL, urlList));
+
+
+        } catch (Exception e) {
+            System.err.println("error handling domain: " + domainName);
+            e.printStackTrace(System.err);
+        }
+
+        try {
+
+            int responseCode = Utils.isHttpTrackEnabled(domainName);
+
+            analysisResult.setHttpTrackResCode(responseCode);
+
+            boolean isEnabled = responseCode != HttpURLConnection.HTTP_BAD_METHOD &&
+                    responseCode != HttpURLConnection.HTTP_NOT_ACCEPTABLE &&
+                    responseCode != HttpURLConnection.HTTP_CLIENT_TIMEOUT;
+
+            analysisResult.setHttpTrackEnabled(isEnabled);
+        } catch (Exception e) {
+            System.err.println("error handling domain: " + domainName);
+            e.printStackTrace(System.err);
+        }
 
         return analysisResult;
 
