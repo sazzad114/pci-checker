@@ -274,31 +274,31 @@ public class AnalysisResult {
         }
 
         return certAnalaysisResult.toString() +
-                "\n 6. Is Redirected to HTTP = " + redirectedToHttp +
-                "\n ..... Redirect URL = " + redirectUrl +
-                "\n 7. Is OpenSSH available = " + opensshAvailable +
-                "\n 8. Is OpenSSH vulnerable = " + opensshVulnerable +
-                "\n ..... OpenSSH version = " + opensshVersion +
-                "\n 9. Is Server Info available = " + serverInfoAvailable +
-                "\n ..... Server Info = " + serverInfo +
-                "\n 10a. Security Header: X-Frame-Options = " + xframeOptionAvailable +
-                "\n ..... X-Frame-Options = " + xframeOption +
-                "\n 10b. Security Header: X-XSS-Protection = " + xssHeaderAvailable +
-                "\n ..... X-XSS-Protection = " + xssHeader +
-                "\n 10c. Security Header: Strict-Transport-Security = " + strictTransportAvailable +
-                "\n ..... Strict-Transport-Security = " + strictTransport +
-                "\n 10d. Security Header: X-Content-Type-Options = " + contentTypeOptionsAvailable +
-                "\n ..... X-Content-Type-Options = " + contentTypeOptions +
-                "\n 11a. TLSv1.0 Supported = " + tlsv1Supported +
-                "\n 11b. SSLv3.0 Supported = " + sslv3Supported +
-                "\n 11c. SSLv2.0 Supported = " + sslv2Supported +
-                "\n 12. Weak Cipher Supported = " + weakcipherSupported +
-                "\n 13. Mysql available = " + mysqlAvailable +
-                "\n 14. Mysql default password = " + defaultMysqlPassword +
-                "\n 15. Didn't check script integrity = " + integrityCheck +
-                "\n ..... Script URLs: = " + badScriptSrc.toString() +
-                "\n 16. HTTP Trace = " + httpTrackEnabled +
-                "\n ..... HTTP Trace Response code: = " + httpTrackResCode +
-                "\n 17. Browsable Dir Enabled = " + browsableDirEnabled;
+                " 6. Is Redirected to HTTP = " + redirectedToHttp +
+                " ..... Redirect URL = " + redirectUrl +
+                " 7. Is OpenSSH available = " + opensshAvailable +
+                " 8. Is OpenSSH vulnerable = " + opensshVulnerable +
+                " ..... OpenSSH version = " + opensshVersion +
+                " 9. Is Server Info available = " + serverInfoAvailable +
+                " ..... Server Info = " + serverInfo +
+                " 10a. Security Header: X-Frame-Options = " + xframeOptionAvailable +
+                " ..... X-Frame-Options = " + xframeOption +
+                " 10b. Security Header: X-XSS-Protection = " + xssHeaderAvailable +
+                " ..... X-XSS-Protection = " + xssHeader +
+                " 10c. Security Header: Strict-Transport-Security = " + strictTransportAvailable +
+                " ..... Strict-Transport-Security = " + strictTransport +
+                " 10d. Security Header: X-Content-Type-Options = " + contentTypeOptionsAvailable +
+                " ..... X-Content-Type-Options = " + contentTypeOptions +
+                " 11a. TLSv1.0 Supported = " + tlsv1Supported +
+                " 11b. SSLv3.0 Supported = " + sslv3Supported +
+                " 11c. SSLv2.0 Supported = " + sslv2Supported +
+                " 12. Weak Cipher Supported = " + weakcipherSupported +
+                " 13. Mysql available = " + mysqlAvailable +
+                " 14. Mysql default password = " + defaultMysqlPassword +
+                " 15. Didn't check script integrity = " + integrityCheck +
+                " ..... Script URLs: = " + badScriptSrc.toString() +
+                " 16. HTTP Trace = " + httpTrackEnabled +
+                " ..... HTTP Trace Response code: = " + httpTrackResCode +
+                " 17. Browsable Dir Enabled = " + browsableDirEnabled;
     }
 }

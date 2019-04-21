@@ -1,7 +1,5 @@
 package com.pci.checker.util;
 
-import com.sun.javafx.binding.StringFormatter;
-
 import java.io.BufferedReader;
 import java.io.FileReader;
 import java.io.InputStreamReader;
@@ -23,7 +21,7 @@ public class Utils {
         BufferedReader br = new BufferedReader(new FileReader(csvFile));
         while ((line = br.readLine()) != null) {
             if (!line.isEmpty()) {
-                links.add(line.split(",")[1].toLowerCase());
+                links.add(line.split(",")[1].trim().toLowerCase());
             }
         }
 
@@ -36,10 +34,10 @@ public class Utils {
 
         try {
 
-            URL obj = new URL("http://www." + domainName);
+            URL obj = new URL("http://" + domainName);
             HttpURLConnection conn = (HttpURLConnection) obj.openConnection();
-            conn.setReadTimeout(1000);
-            conn.setConnectTimeout(1000);
+            conn.setReadTimeout(5000);
+            conn.setConnectTimeout(5000);
             conn.addRequestProperty("Accept-Language", "en-US,en;q=0.8");
             conn.addRequestProperty("User-Agent", "Mozilla");
 
@@ -54,7 +52,7 @@ public class Utils {
                 redirect = true;
             }
 
-            String newUrl = "http://www." + domainName;
+            String newUrl = "http://" + domainName;
 
 
             while (redirect) {
@@ -72,8 +70,8 @@ public class Utils {
                 // open the new connection again
 
                 conn = (HttpURLConnection) new URL(newUrl).openConnection();
-                conn.setReadTimeout(1000);
-                conn.setConnectTimeout(1000);
+                conn.setReadTimeout(5000);
+                conn.setConnectTimeout(5000);
                 conn.setRequestProperty("Cookie", cookies);
                 conn.addRequestProperty("Accept-Language", "en-US,en;q=0.8");
 
@@ -114,7 +112,7 @@ public class Utils {
 
         while ((line = br.readLine()) != null) {
             sshSoftwareSpec.append(line)
-                    .append('\n');
+                    .append(' ');
         }
 
         return sshSoftwareSpec.toString();
@@ -122,10 +120,10 @@ public class Utils {
 
     public static Map<String, List<String>> getHeaders(String domainName) throws Exception {
 
-        URL obj = new URL("https://www." + domainName);
+        URL obj = new URL("https://" + domainName);
         HttpURLConnection conn = (HttpURLConnection) obj.openConnection();
-        conn.setReadTimeout(1000);
-        conn.setConnectTimeout(1000);
+        conn.setReadTimeout(5000);
+        conn.setConnectTimeout(5000);
         conn.addRequestProperty("Accept-Language", "en-US,en;q=0.8");
         conn.addRequestProperty("User-Agent", "Mozilla");
 
@@ -135,10 +133,10 @@ public class Utils {
 
     public static int isHttpTrackEnabled(String domainName) throws Exception {
 
-        URL obj = new URL("http://www." + domainName);
+        URL obj = new URL("http://" + domainName);
         HttpURLConnection conn = (HttpURLConnection) obj.openConnection();
-        conn.setReadTimeout(1000);
-        conn.setConnectTimeout(1000);
+        conn.setReadTimeout(5000);
+        conn.setConnectTimeout(5000);
         conn.setRequestMethod("TRACE");
         conn.addRequestProperty("Accept-Language", "en-US,en;q=0.8");
         conn.addRequestProperty("User-Agent", "Mozilla");
@@ -150,7 +148,7 @@ public class Utils {
 
         ProcessBuilder pb = new
                 ProcessBuilder("/bin/sh", "-c",
-                String.format("timeout 2 openssl s_client -connect www.%s:443 %s </dev/null 2>/dev/null", domainName, version));
+                String.format("timeout 2 openssl s_client -connect %s:443 %s </dev/null 2>/dev/null", domainName, version));
 
         final Process p = pb.start();
 
@@ -174,7 +172,7 @@ public class Utils {
 
         ProcessBuilder pb = new
                 ProcessBuilder("/bin/sh", "-c",
-                String.format("timeout 2 openssl s_client -connect www.%s:443 -cipher 'IDEA:DES:MD5' </dev/null 2>/dev/null", domainName));
+                String.format("timeout 2 openssl s_client -connect %s:443 -cipher 'IDEA:DES:MD5' </dev/null 2>/dev/null", domainName));
 
         final Process p = pb.start();
 
@@ -221,7 +219,7 @@ public class Utils {
 
         ProcessBuilder pb = new
                 ProcessBuilder("/bin/sh", "-c",
-                String.format("timeout 1 /opt/lampp/bin/mysql -u root -h www.%s", domainName));
+                String.format("timeout 1 /opt/lampp/bin/mysql -u root -h %s", domainName));
 
         final Process p = pb.start();
 
@@ -233,7 +231,7 @@ public class Utils {
 
         while ((line = br.readLine()) != null) {
             mysqlError.append(line)
-                    .append('\n');
+                    .append(' ');
         }
 
         String output = mysqlError.toString();
@@ -245,8 +243,8 @@ public class Utils {
 
         URL obj = new URL(domainName);
         HttpURLConnection conn = (HttpURLConnection) obj.openConnection();
-        conn.setReadTimeout(1000);
-        conn.setConnectTimeout(1000);
+        conn.setReadTimeout(5000);
+        conn.setConnectTimeout(5000);
         conn.addRequestProperty("Accept-Language", "en-US,en;q=0.8");
         conn.addRequestProperty("User-Agent", "Mozilla");
 
@@ -283,7 +281,7 @@ public class Utils {
     public static boolean isBrowseDirEnabled(String domainName, List<String> urlList) throws Exception {
 
         List<String> filteredList = urlList.stream()
-                .filter(url -> !url.isEmpty() && !url.startsWith("/") && !url.startsWith("http://") && !url.startsWith("https://"))
+                .filter(url -> !url.isEmpty() && !url.startsWith("//") && !url.startsWith("http://") && !url.startsWith("https://"))
                 .collect(Collectors.toList());
 
         Map<String, Integer> dirCount = new HashMap<>();
@@ -297,35 +295,37 @@ public class Utils {
             }
         }
 
+        if (!dirCount.isEmpty()) {
 
-        String dir = Collections.max(dirCount.entrySet(), Comparator.comparingInt(Map.Entry::getValue)).getKey();
+            String dir = Collections.max(dirCount.entrySet(), Comparator.comparingInt(Map.Entry::getValue)).getKey();
 
-        if (dirCount.get(dir) > 1) {
+            if (dirCount.get(dir) > 1) {
 
-            System.out.println(" domain: " + domainName + "  Dir: " + dir);
+                System.out.println(" domain: " + domainName + "  Dir: " + dir);
 
-            URL obj = new URL(domainName + "/" + dir);
-            HttpURLConnection conn = (HttpURLConnection) obj.openConnection();
-            conn.setReadTimeout(1000);
-            conn.setConnectTimeout(1000);
-            conn.addRequestProperty("Accept-Language", "en-US,en;q=0.8");
-            conn.addRequestProperty("User-Agent", "Mozilla");
+                URL obj = new URL(domainName + "/" + dir);
+                HttpURLConnection conn = (HttpURLConnection) obj.openConnection();
+                conn.setReadTimeout(5000);
+                conn.setConnectTimeout(5000);
+                conn.addRequestProperty("Accept-Language", "en-US,en;q=0.8");
+                conn.addRequestProperty("User-Agent", "Mozilla");
 
-            if (conn.getResponseCode() != HttpURLConnection.HTTP_NOT_FOUND) {
-                BufferedReader br = new BufferedReader(
-                        new InputStreamReader(conn.getInputStream()));
+                if (conn.getResponseCode() != HttpURLConnection.HTTP_NOT_FOUND) {
+                    BufferedReader br = new BufferedReader(
+                            new InputStreamReader(conn.getInputStream()));
 
-                String inputLine;
-                while ((inputLine = br.readLine()) != null) {
+                    String inputLine;
+                    while ((inputLine = br.readLine()) != null) {
 
-                    if (inputLine.contains("<title>Index of")) {
-                        if (inputLine.contains(dir + "</title>")) {
-                            return true;
+                        if (inputLine.contains("<title>Index of")) {
+                            if (inputLine.contains(dir + "</title>")) {
+                                return true;
+                            }
                         }
                     }
-                }
 
-                br.close();
+                    br.close();
+                }
             }
         }
 

@@ -45,7 +45,7 @@ public class AnalysisService {
             analysisResult.setRedirectedToHttp(redirectURL.contains("http://"));
         }
 
-        redirectURL = "http://www." + domainName;
+        redirectURL = "http://" + domainName;
 
         try {
 
@@ -167,9 +167,7 @@ public class AnalysisService {
 
             analysisResult.setHttpTrackResCode(responseCode);
 
-            boolean isEnabled = responseCode != HttpURLConnection.HTTP_BAD_METHOD &&
-                    responseCode != HttpURLConnection.HTTP_NOT_ACCEPTABLE &&
-                    responseCode != HttpURLConnection.HTTP_CLIENT_TIMEOUT;
+            boolean isEnabled = responseCode == HttpURLConnection.HTTP_OK;
 
             analysisResult.setHttpTrackEnabled(isEnabled);
         } catch (Exception e) {

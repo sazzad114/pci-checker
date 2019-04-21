@@ -90,7 +90,7 @@ public class CertAnalysisService {
 
         ProcessBuilder pb = new
                 ProcessBuilder("/bin/sh", "-c",
-                String.format("timeout 2 openssl s_client -showcerts -connect www.%s:443 </dev/null 2>/dev/null | openssl x509 -outform PEM", domainName));
+                String.format("timeout 2 openssl s_client -showcerts -connect %s:443 </dev/null 2>/dev/null | openssl x509 -outform PEM", domainName));
 
         final Process p = pb.start();
 
@@ -112,7 +112,7 @@ public class CertAnalysisService {
 
         ProcessBuilder pb = new
                 ProcessBuilder("/bin/sh", "-c",
-                String.format("timeout 2 openssl s_client -showcerts -connect www.%s:443 -servername www.%s </dev/null 2>/dev/null | openssl x509 -outform PEM", domainName, domainName));
+                String.format("timeout 2 openssl s_client -showcerts -connect %s:443 -servername %s </dev/null 2>/dev/null | openssl x509 -outform PEM", domainName, domainName));
 
         final Process p = pb.start();
 

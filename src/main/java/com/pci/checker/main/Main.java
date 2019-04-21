@@ -5,18 +5,23 @@ import com.pci.checker.util.Utils;
 
 public class Main {
 
-    private static final String FILE = "/home/krishnokoli/projects/pci-checker/data/top1.csv";
+    private static final String FILE = "/home/krishnokoli/projects/pci-checker/data/5.Top_200_recreation.csv";
 
     private static AnalysisService analysisService = new AnalysisService();
 
     public static void main(String[] args) throws Exception {
 
+        String source = FILE;
+
+        if (args.length == 1) {
+            source = args[0];
+        }
+
         int curr = 1;
         System.out.println("=====================================");
-        for (String domainName : Utils.readLinksFromCsv(FILE)) {
-            System.out.println("*** Analyzing Domain: [" + curr + "] " + domainName);
+        for (String domainName : Utils.readLinksFromCsv(source)) {
             try {
-                System.out.println(analysisService.getAnalysisResult(domainName));
+                System.out.println("*** Analyzing Domain: [" + curr + " : " + domainName + "] " + analysisService.getAnalysisResult(domainName));
             } catch (Exception e) {
                 e.printStackTrace();
                 System.err.println("Problem processing domain: " + domainName);
