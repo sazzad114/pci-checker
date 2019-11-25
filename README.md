@@ -1,6 +1,6 @@
 # PciCheckerLite: Source Code
 
-An tool to detect 17 PCI related vulnerabilities.
+A tool to detect 17 PCI related vulnerabilities in a website.
 
 ### Prerequisites to use PciCheckerLite:
 
