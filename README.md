@@ -27,7 +27,7 @@ Test cases                          |   Severity
 ### Prerequisites to use PciCheckerLite:
 
 1. Download and Install JDK 8 or above.
-2. Set `JAVA7_HOME` environment variable.
+2. Set `JAVA_HOME` environment variable.
 3. Download and Install Gradle.
 4. Run `cd /path/to/pci-checker`
 5. Run `gradle clean build`
