@@ -285,10 +285,10 @@ public class Utils {
                 .filter(url -> !url.isEmpty() && !url.startsWith("//") && !url.startsWith("http://") && !url.startsWith("https://"))
                 .collect(Collectors.toList());
 
-        Map<String, Integer> dirCount = new HashMap<>();
+        Map<String, Integer> dirCount = new LinkedHashMap<>();
 
         for (String link : filteredList) {
-            String [] dirs = link.split("/");
+            String[] dirs = link.split("/");
 
             ArrayList dirList = new ArrayList();
 
@@ -297,47 +297,48 @@ public class Utils {
             for (String dir : dirs) {
                 currDir.append(dir).append("/");
 
-                if (currDir.toString().equals("/")) {continue;}
+                if (currDir.toString().equals("/")) {
+                    continue;
+                }
 
                 Integer count = dirCount.putIfAbsent(currDir.toString(), 1);
                 if (count != null) {
                     dirCount.put(currDir.toString(), count + 1);
                 }
             }
-
-
         }
 
         if (!dirCount.isEmpty()) {
 
-            String dir = Collections.max(dirCount.entrySet(), Comparator.comparingInt(Map.Entry::getValue)).getKey();
+            for (String dir : dirCount.keySet()) {
 
-            if (dirCount.get(dir) > 1) {
+                if (dirCount.get(dir) > 1) {
 
-                System.out.println(" domain: " + domainName + "  Dir: " + dir);
+                    URL obj = new URL(domainName + "/" + dir);
+                    HttpURLConnection conn = (HttpURLConnection) obj.openConnection();
+                    conn.setReadTimeout(5000);
+                    conn.setConnectTimeout(5000);
+                    conn.addRequestProperty("Accept-Language", "en-US,en;q=0.8");
+                    conn.addRequestProperty("User-Agent", "Mozilla");
 
-                URL obj = new URL(domainName + "/" + dir);
-                HttpURLConnection conn = (HttpURLConnection) obj.openConnection();
-                conn.setReadTimeout(5000);
-                conn.setConnectTimeout(5000);
-                conn.addRequestProperty("Accept-Language", "en-US,en;q=0.8");
-                conn.addRequestProperty("User-Agent", "Mozilla");
+                    if (conn.getResponseCode() != HttpURLConnection.HTTP_NOT_FOUND) {
+                        BufferedReader br = new BufferedReader(
+                                new InputStreamReader(conn.getInputStream()));
 
-                if (conn.getResponseCode() != HttpURLConnection.HTTP_NOT_FOUND) {
-                    BufferedReader br = new BufferedReader(
-                            new InputStreamReader(conn.getInputStream()));
+                        String inputLine;
+                        while ((inputLine = br.readLine()) != null) {
 
-                    String inputLine;
-                    while ((inputLine = br.readLine()) != null) {
-
-                        if (inputLine.contains("<title>Index of")) {
-                            if (inputLine.contains(dir + "</title>")) {
-                                return true;
+                            if (inputLine.contains("<title>Index of")) {
+                                if (inputLine.contains(dir + "</title>")) {
+                                    return true;
+                                }
                             }
                         }
-                    }
 
-                    br.close();
+                        br.close();
+                    } else {
+                        return false;
+                    }
                 }
             }
         }
