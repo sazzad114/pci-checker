@@ -5,16 +5,16 @@ import com.pci.checker.util.Utils;
 
 public class Main {
 
-    private static final String FILE = "/home/krishnokoli/projects/pci-checker/data/5.Top_200_recreation.csv";
-
     private static AnalysisService analysisService = new AnalysisService();
 
     public static void main(String[] args) throws Exception {
 
-        String source = FILE;
+        String source = null;
 
         if (args.length == 1) {
             source = args[0];
+        } else {
+            System.err.println("Please run the following command:\n java -jar /path/to/pci-checker.jar \"/path/to/domains.csv\"");
         }
 
         int curr = 1;
