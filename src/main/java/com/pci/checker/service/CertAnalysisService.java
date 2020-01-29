@@ -1,6 +1,7 @@
 package com.pci.checker.service;
 
 import com.pci.checker.model.CertAnalaysisResult;
+import com.pci.checker.util.Utils;
 import org.bouncycastle.jce.provider.JCEECPublicKey;
 
 import java.io.BufferedReader;
@@ -13,8 +14,7 @@ import java.security.cert.*;
 import java.security.interfaces.DSAPublicKey;
 import java.security.interfaces.ECPublicKey;
 import java.security.interfaces.RSAPublicKey;
-import java.util.HashMap;
-import java.util.Map;
+import java.util.*;
 import java.util.concurrent.TimeUnit;
 
 public class CertAnalysisService {
@@ -34,11 +34,7 @@ public class CertAnalysisService {
 
         CertAnalaysisResult result = new CertAnalaysisResult();
 
-        String encodedCert = crawlCertificate(domainName);
-
-        if (encodedCert.isEmpty()) {
-            encodedCert = crawlCertificateWithServerName(domainName);
-        }
+        String encodedCert = crawlCertificateWithServerName(domainName);
 
         if (encodedCert.isEmpty()) {
             return result;
@@ -61,7 +57,26 @@ public class CertAnalysisService {
         String issuerDn = principal.getName();
         result.setIssuerdn(issuerDn);
 
-        result.setWrongHostName(!subjectDn.toLowerCase().contains(domainName.toLowerCase())); // 3
+        subjectDn = Utils.unStaredDn(subjectDn);
+
+        boolean matched = domainName.toLowerCase().contains(subjectDn.toLowerCase());
+
+        try {
+            if (!matched) {
+                for (String alt : getSubjectAlternativeNames(cert)) {
+                    if (domainName.toLowerCase().contains(Utils.unStaredDn(alt).toLowerCase())) {
+                        matched = true;
+                        break;
+                    }
+                }
+            }
+        } catch (Exception e) {
+            System.err.println("error handling domain: " + domainName);
+            e.printStackTrace(System.err);
+        }
+
+
+        result.setWrongHostName(!matched); // 3
 
         for (String hash : WEAK_HASH) {    // 4
             if (cert.getSigAlgName().contains(hash)) {
@@ -86,26 +101,28 @@ public class CertAnalysisService {
         return result;
     }
 
-    private static String crawlCertificate(String domainName) throws Exception {
-
-        ProcessBuilder pb = new
-                ProcessBuilder("/bin/sh", "-c",
-                String.format("timeout 2 openssl s_client -showcerts -connect %s:443 </dev/null 2>/dev/null | openssl x509 -outform PEM", domainName));
-
-        final Process p = pb.start();
-
-        BufferedReader br = new BufferedReader(new InputStreamReader(p.getInputStream()));
-
-        StringBuilder cert = new StringBuilder();
-
-        String line;
-
-        while ((line = br.readLine()) != null) {
-            cert.append(line)
-                    .append('\n');
+    /* @param certificate a certificate
+     * @return a list of subject alternative names; list is never null
+     * @throws CertificateParsingException if parsing the certificate failed
+     */
+    public static List<String> getSubjectAlternativeNames(final X509Certificate certificate) throws CertificateParsingException {
+        final Collection<List<?>> altNames = certificate.getSubjectAlternativeNames();
+        if (altNames == null) {
+            return new ArrayList<>();
         }
-
-        return cert.toString();
+        final List<String> result = new ArrayList<>();
+        for (final List<?> generalName : altNames) {
+            /**
+             * generalName has the name type as the first element a String or byte array for the second element. We return any general names that are String types.
+             *
+             * We don't inspect the numeric name type because some certificates incorrectly put IPs and DNS names under the wrong name types.
+             */
+            final Object value = generalName.get(1);
+            if (value instanceof String) {
+                result.add(((String) value).toLowerCase());
+            }
+        }
+        return result;
     }
 
     private static String crawlCertificateWithServerName(String domainName) throws Exception {

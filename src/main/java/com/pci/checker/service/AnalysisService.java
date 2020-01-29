@@ -5,6 +5,7 @@ import com.pci.checker.model.CertAnalaysisResult;
 import com.pci.checker.util.Utils;
 
 import java.net.HttpURLConnection;
+import java.net.MalformedURLException;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
@@ -27,6 +28,22 @@ public class AnalysisService {
 
         AnalysisResult analysisResult = new AnalysisResult();
 
+        String redirectURL = Utils.getRedirectedUrl(domainName);
+
+        analysisResult.setRedirectUrl(redirectURL);
+
+        if (redirectURL != null) {
+            analysisResult.setRedirectedToHttp(redirectURL.contains("http://"));
+        } else {
+            redirectURL = "http://" + domainName;
+        }
+
+        try {
+            domainName = Utils.getdomainNameFromUrl(redirectURL);
+        } catch (MalformedURLException e) {
+            System.err.println("error handling domain: " + domainName);
+            e.printStackTrace(System.err);
+        }
 
         try {
             CertAnalaysisResult certAnalaysisResult = certAnalysisService.analyzeCert(domainName);
@@ -35,17 +52,6 @@ public class AnalysisService {
             System.err.println("error handling domain: " + domainName);
             e.printStackTrace(System.err);
         }
-
-
-        String redirectURL = Utils.getRedirectedUrl(domainName);
-
-        analysisResult.setRedirectUrl(redirectURL);
-
-        if (redirectURL != null) {
-            analysisResult.setRedirectedToHttp(redirectURL.contains("http://"));
-        }
-
-        redirectURL = "http://" + domainName;
 
         try {
 

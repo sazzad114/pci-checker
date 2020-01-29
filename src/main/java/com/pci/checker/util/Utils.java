@@ -4,6 +4,7 @@ import java.io.BufferedReader;
 import java.io.FileReader;
 import java.io.InputStreamReader;
 import java.net.HttpURLConnection;
+import java.net.MalformedURLException;
 import java.net.URL;
 import java.util.*;
 import java.util.regex.Matcher;
@@ -148,7 +149,7 @@ public class Utils {
 
         ProcessBuilder pb = new
                 ProcessBuilder("/bin/sh", "-c",
-                String.format("timeout 2 openssl s_client -connect %s:443 %s </dev/null 2>/dev/null", domainName, version));
+                String.format("timeout 2 openssl s_client -connect %s:443 -servername %s %s </dev/null 2>/dev/null", domainName, domainName, version));
 
         final Process p = pb.start();
 
@@ -172,7 +173,7 @@ public class Utils {
 
         ProcessBuilder pb = new
                 ProcessBuilder("/bin/sh", "-c",
-                String.format("timeout 2 openssl s_client -connect %s:443 -cipher 'IDEA:DES:MD5' </dev/null 2>/dev/null", domainName));
+                String.format("timeout 2 openssl s_client -connect %s:443 -servername %s -cipher 'IDEA:DES:MD5' </dev/null 2>/dev/null", domainName, domainName));
 
         final Process p = pb.start();
 
@@ -197,7 +198,7 @@ public class Utils {
 
         ProcessBuilder pb = new
                 ProcessBuilder("/bin/sh", "-c",
-                String.format("nc www.%s 3306 -w 1", domainName));
+                String.format("nc %s 3306 -w 1", domainName));
 
         final Process p = pb.start();
 
@@ -219,7 +220,7 @@ public class Utils {
 
         ProcessBuilder pb = new
                 ProcessBuilder("/bin/sh", "-c",
-                String.format("timeout 1 /opt/lampp/bin/mysql -u root -h %s", domainName));
+                String.format("timeout 2 /opt/lampp/bin/mysql -u root -h %s", domainName));
 
         final Process p = pb.start();
 
@@ -236,7 +237,7 @@ public class Utils {
 
         String output = mysqlError.toString();
 
-        return output.trim().isEmpty();
+        return output.trim().isEmpty() || output.trim().contains("Welcome to the MariaDB monitor");
     }
 
     public static boolean missesIntegrityChecked(String domainName, List<String> urlList) throws Exception {
@@ -330,5 +331,19 @@ public class Utils {
         }
 
         return false;
+    }
+
+    public static String getdomainNameFromUrl(String redirectURL) throws MalformedURLException {
+        return new URL(redirectURL).getHost();
+    }
+
+    public static String unStaredDn(String subjectDn) {
+        String toRet = subjectDn;
+
+        if (subjectDn.startsWith("*")) {
+            toRet = subjectDn.substring(1);
+        }
+
+        return toRet;
     }
 }
