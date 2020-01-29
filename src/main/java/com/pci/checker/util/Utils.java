@@ -237,7 +237,7 @@ public class Utils {
 
         String output = mysqlError.toString();
 
-        return output.trim().isEmpty() || output.trim().contains("Welcome to the MariaDB monitor");
+        return output.trim().isEmpty();
     }
 
     public static boolean missesIntegrityChecked(String domainName, List<String> urlList) throws Exception {
@@ -288,12 +288,24 @@ public class Utils {
         Map<String, Integer> dirCount = new HashMap<>();
 
         for (String link : filteredList) {
-            String dir = link.split("/")[0];
+            String [] dirs = link.split("/");
 
-            Integer count = dirCount.putIfAbsent(dir, 1);
-            if (count != null) {
-                dirCount.put(dir, count + 1);
+            ArrayList dirList = new ArrayList();
+
+            StringBuilder currDir = new StringBuilder();
+
+            for (String dir : dirs) {
+                currDir.append(dir).append("/");
+
+                if (currDir.toString().equals("/")) {continue;}
+
+                Integer count = dirCount.putIfAbsent(currDir.toString(), 1);
+                if (count != null) {
+                    dirCount.put(currDir.toString(), count + 1);
+                }
             }
+
+
         }
 
         if (!dirCount.isEmpty()) {
