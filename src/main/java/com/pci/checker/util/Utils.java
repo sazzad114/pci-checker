@@ -329,7 +329,7 @@ public class Utils {
                         while ((inputLine = br.readLine()) != null) {
 
                             if (inputLine.contains("<title>Index of")) {
-                                if (inputLine.contains(dir + "</title>")) {
+                                if (inputLine.contains(dir.substring(0, dir.length() - 1) + "</title>")) {
                                     return true;
                                 }
                             }
