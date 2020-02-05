@@ -1,7 +1,7 @@
 # PciCheckerLite: Source Code
 
-A tool to detect the following 17 PCI related vulnerabilities in a website.
-
+This repository contains the source code of PciCheckerLite that we used in our CCS'19 [Security Certification in Payment Card Industry](https://dl.acm.org/citation.cfm?doid=3319535.3363195) paper.
+PciCheckerLite is a tool to detect the following 17 PCI related vulnerabilities in a website. 
 
 Test cases                          |   Severity
 ------------------------------------| -------------
@@ -57,4 +57,22 @@ Test cases                          |   Severity
  THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 ## Reference
 
-If you find this project useful, please cite our CCS'19 [Security Certification in Payment Card Industry](https://dl.acm.org/citation.cfm?doid=3319535.3363195) paper.
+If you find this useful please cite the following paper.
+
+     @inproceedings{DBLP:conf/ccs/RahamanWY19,
+         author    = {Sazzadur Rahaman and
+               Gang Wang and
+               Danfeng Daphne Yao},
+         title     = {Security Certification in Payment Card Industry: Testbeds, Measurements,
+               and Recommendations},
+         booktitle = {Proceedings of the 2019 {ACM} {SIGSAC} Conference on Computer and
+               Communications Security, {CCS} 2019, London, UK, November 11-15, 2019},
+         pages     = {481--498},
+         year      = {2019},
+         url       = {https://doi.org/10.1145/3319535.3363195},
+         doi       = {10.1145/3319535.3363195},
+         bibsource = {dblp computer science bibliography, https://dblp.org}
+    }
+
+If you have any questions or suggestions, please email to sazzad114@gmail.com.
+
